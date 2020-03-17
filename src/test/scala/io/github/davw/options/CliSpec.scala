@@ -3,7 +3,6 @@ package io.github.davw.options
 import org.scalatest._
 
 class CliSpec extends FlatSpec {
-  import OptionParseable._
   import Cli._
 
   case class EmptyArgs()
@@ -24,25 +23,7 @@ class CliSpec extends FlatSpec {
     }
   }
 
-//  "A single value" should "be parsed from a single arg" in {
-//    assert(Cli.parse[String](Seq("hello")) == "hello")
-//    assert(Cli.parse[Int](Seq("24")) == 24)
-//  }
-//
-//  it should "not be parsed with no args" in {
-//    assertThrows[InvalidOptionsException] {
-//      Cli.parse[String](Seq())
-//    }
-//  }
-//
-//  it should "not be parsed with multiple args" in {
-//    assertThrows[InvalidOptionsException] {
-//      Cli.parse[String](Seq("first", "second"))
-//    }
-//  }
-
   case class SimpleApp(input: String, output: String)
-
 
   "A simple case class" should "be parsed from predictable arguments in any order" in {
     val expected = SimpleApp("my_input", "my_output")
@@ -60,7 +41,7 @@ class CliSpec extends FlatSpec {
     val exception = intercept[InvalidOptionsException] {
       Cli.parse[SimpleApp](Seq("--input", "my_input", "--output", "my_output", "--throughput", "my_throughput"))
     }
-    assert(exception.getMessage.contains("--throughput"))
+    assert(exception.getMessage.contains("throughput"))
   }
 
 //  sealed trait Commands
@@ -77,6 +58,22 @@ class CliSpec extends FlatSpec {
   "A case class with a default value" should "be parsed with or without the argument with a default value being passed" in {
     assert(Cli.parse[CommandWithDefaults](Seq("--input", "/dev/random", "--output", "elsewhere")) == CommandWithDefaults("/dev/random", "elsewhere"))
     assert(Cli.parse[CommandWithDefaults](Seq("--input", "/dev/random")) == CommandWithDefaults("/dev/random"))
+  }
+
+
+  case class CommandWithOtherFieldTypes(age: Int)
+
+  "A case class with non-string field types" should "be parsed with a correct value" in {
+    assert(Cli.parse[CommandWithOtherFieldTypes](Seq("--age" ,"21")) == CommandWithOtherFieldTypes(21))
+  }
+
+  it should "return a meaningful error when an arg is unparseable" in {
+    val exception = intercept[InvalidOptionsException] {
+      Cli.parse[CommandWithOtherFieldTypes](Seq("--age", "twentyone"))
+    }
+    assert(exception.getMessage.contains("age"))
+    assert(exception.getMessage.contains("NumberFormatException"))
+
   }
 
 
