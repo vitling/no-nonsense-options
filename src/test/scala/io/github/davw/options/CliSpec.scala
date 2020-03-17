@@ -44,14 +44,14 @@ class CliSpec extends FlatSpec {
     assert(exception.getMessage.contains("throughput"))
   }
 
-//  sealed trait Commands
-//  case class CommandOne(input: String, output: String, mode: String) extends Commands
-//  case class CommandTwo(input: String, throughput: String) extends Commands
-//
-//  "A sealed case class family" should "be parsed with a qualifying first argument" in {
-//    assert(Cli.parse[Commands](Seq("CommandOne", "--input", "my_input", "--output", "my_output", "--mode", "mode_one")) == CommandOne("my_input", "my_output", "mode_one"))
-//    assert(Cli.parse[Commands](Seq("CommandTwo", "--input", "my_input", "--throughput", "my_throughput")) == CommandTwo("my_input", "my_throughput"))
-//  }
+  sealed trait Commands
+  case class CommandOne(input: String, output: String, mode: String) extends Commands
+  case class CommandTwo(input: String, throughput: String) extends Commands
+
+  "A sealed case class family" should "be parsed with a qualifying first argument" in {
+    assert(Cli.parse[Commands](Seq("CommandOne", "--input", "my_input", "--output", "my_output", "--mode", "mode_one")) == CommandOne("my_input", "my_output", "mode_one"))
+    assert(Cli.parse[Commands](Seq("CommandTwo", "--input", "my_input", "--throughput", "my_throughput")) == CommandTwo("my_input", "my_throughput"))
+  }
 
   case class CommandWithDefaults(input: String, output: String = "/dev/null")
 

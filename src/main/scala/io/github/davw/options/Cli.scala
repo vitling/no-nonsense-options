@@ -1,6 +1,7 @@
 package io.github.davw.options
 
 import shapeless._
+import shapeless.labelled.FieldType
 import shapeless.ops.record.Keys
 
 import scala.util.{Failure, Success, Try}
@@ -92,7 +93,7 @@ object Cli {
 
   /** Trait representing the high-level operations to interacting with the Cli API */
   trait ArgParser[T] {
-    def fromCli(args: IterableOnce[String]): Either[ParseErrors, T]
+    def fromCli(args: Iterable[String]): Either[ParseErrors, T]
     def usage(): String
   }
 
@@ -115,13 +116,76 @@ object Cli {
    defaults: Default.Aux[CC, D],     // Extracts default values from case class definition
    kvParser: KVParser[K, V, D])      // Our inductively defined KVParser implementation from above
   : ArgParser[CC] = new ArgParser[CC] {
-    override def fromCli(args: IterableOnce[String]): Either[ParseErrors, CC] = {
+    override def fromCli(args: Iterable[String]): Either[ParseErrors, CC] = {
       kvParser.parse(argsToMap(args), defaults.apply()) map gen.from
     }
 
     override def usage(): String = {
       kvParser.fieldDescription(defaults.apply()).mkString("\n")
     }
+  }
+
+
+  def transform[T, U](argParser: ArgParser[T], fn: T => U): ArgParser[U] = new ArgParser[U] {
+    override def fromCli(args: Iterable[String]): Either[ParseErrors, U] = argParser.fromCli(args).map(fn)
+    override def usage(): String = argParser.usage()
+  }
+
+  /**
+   * Represents a set of "command" types that could be parsed, based on a discriminating "command" name
+   * We will use this to parsed sealed case class families, via shapeless' discriminated coproduct mapping
+   * */
+  trait DiscriminatedParser[A] {
+    /** Retrieve a parser for the given command name, if available */
+    def parser(command: String): Option[ArgParser[A]]
+
+    /** List available commands */
+    def options: Seq[String]
+  }
+
+  // In the next 2 definitions we inductively define a DiscriminatedParser implementation for arbitrary labelled
+  // Coproducts (also known as discriminated unions).
+
+  implicit def cNilDiscriminatedParser: DiscriminatedParser[CNil] = new DiscriminatedParser[CNil] {
+    // If we have got this far then the command didn't match any known commands, so we propagate the "None" vaue back up the stack
+    override def parser(command: String): Option[ArgParser[CNil]] = None
+    override def options: Seq[String] = Nil
+  }
+
+  import labelled.field
+  implicit def coproductSelector[
+    KL <: Symbol,    // Name of the head command
+    VL,              // Type of the head command
+    CR <: Coproduct] // The tail of the coproduct
+   (implicit keyWitness: Witness.Aux[KL], // To extract the value of the command name
+    argParser: ArgParser[VL],             // A parser for the head command type
+    tail: DiscriminatedParser[CR])        // If it's not a match, we defer to the Coproduct tail
+  : DiscriminatedParser[FieldType[KL, VL] :+: CR] = new DiscriminatedParser[FieldType[KL, VL] :+: CR] {
+      override def parser(command: String): Option[ArgParser[FieldType[KL, VL] :+: CR]] = {
+        if (command == keyWitness.value.name)
+          Some(transform(argParser, (x: VL) => Inl[FieldType[KL, VL], CR](field[KL](x))))
+        else
+          tail.parser(command).map(parser => transform(parser, (x: CR) => Inr[FieldType[KL, VL], CR](x)))
+      }
+      override def options: Seq[String] = Seq(keyWitness.value.name) ++ tail.options
+    }
+
+  /** Using the DiscriminatedParser implementation that can be derived from the isomorphic Coproduct to a sealed case
+   *  class family, we can simply define an ArgParser implementation for the case class family, by taking the first
+   *  argument to determine a "command" that selects which parser to use */
+  implicit def genericSelector[CCF, CP](implicit labelledGeneric: LabelledGeneric.Aux[CCF, CP], cpParser: DiscriminatedParser[CP]): ArgParser[CCF] = new ArgParser[CCF] {
+    override def fromCli(args: Iterable[String]): Either[ParseErrors, CCF] = {
+      args.headOption match {
+        case Some(command) => cpParser.parser(command) match {
+          case Some(parser) => parser.fromCli(args.tail).map(labelledGeneric.from)
+          case None => Left(Seq("The command specified does not match any known types that could be parsed into"))
+        }
+        case None => Left(Seq("No command specified. The first arg to parse a sealed case class family must declare what concrete type to parse into"))
+      }
+    }
+    override def usage(): String = "USAGE: app [command] [options], where [command] is one of:\n" + cpParser.options.map(command => {
+      command + "\n" + cpParser.parser(command).get.usage() + "\n"
+    }).mkString("\n")
   }
 
   /** Exception class that wraps option parsing errors when throwing API is used */
@@ -132,7 +196,7 @@ object Cli {
    *  eg. Map("input" -> "this", "output" -> "that")
    *  TODO: This is probably not as safe as it could be
    *  */
-  private def argsToMap(args: IterableOnce[String]): Map[String, String] = {
+  private def argsToMap(args: Iterable[String]): Map[String, String] = {
     var map: Map[String, String] = Map()
     var key: String = null;
     for (arg <- args) {
@@ -149,11 +213,19 @@ object Cli {
     map
   }
 
-  def parse[T : ArgParser](args: IterableOnce[String]): T = implicitly[ArgParser[T]].fromCli(args) match {
+  def parse[T : ArgParser](args: Iterable[String]): T = implicitly[ArgParser[T]].fromCli(args) match {
     case Right(v) => v
     case Left(err) => {
       println(implicitly[ArgParser[T]].usage())
       throw new InvalidOptionsException(err.mkString("\n"))
     }
+  }
+
+  sealed trait Family
+  case class FirstMember(a: String, b: Int) extends Family
+  case class SecondMember(c: Long, d: String) extends Family
+
+  def main(args: Array[String]): Unit = {
+    println(Cli.parse[Family](Seq("FirstMember", "--a", "hello", "--b5", "15")))
   }
 }
