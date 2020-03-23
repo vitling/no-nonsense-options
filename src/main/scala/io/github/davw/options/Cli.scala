@@ -7,12 +7,12 @@ import shapeless.ops.record.Keys
 import scala.util.{Failure, Success, Try}
 object Cli {
 
-  type ParseError = String
-  type ParseErrors = Seq[ParseError]
+  type Problem = String
+  type Problems = Seq[Problem]
 
   /** Represents how a type OutputType can be parsed from a set of FieldNames and DefaultValues */
   trait KVParser[FieldNames, OutputType, DefaultValues] {
-    def parse(kvArgs: Map[String, String], defaults: DefaultValues): Either[ParseErrors, OutputType]
+    def parse(kvArgs: Map[String, String], defaults: DefaultValues): Either[Problems, OutputType]
 
     // A description of each of the fields in the OutputType. This is used to produce the "usage" string
     def fieldDescription(defaults: DefaultValues): Seq[String]
@@ -20,7 +20,7 @@ object Cli {
 
   /** Represents how a single field (argument) can be parsed from a string parameter */
   trait FieldParser[T] {
-    def fromString(s: String): Either[ParseError, T]
+    def fromString(s: String): Either[Problem, T]
   }
 
   /** Create a FieldParser from a function that might throw an exception, catching it and transforming it to a Left(ParseError) */
@@ -30,7 +30,7 @@ object Cli {
   }
 
   /** Create a FieldParser from a function that follows the Haskell-style Either error pattern */
-  def eitherFieldParser[T](convert: String => Either[ParseError, T]): FieldParser[T] = s => convert(s)
+  def eitherFieldParser[T](convert: String => Either[Problem, T]): FieldParser[T] = s => convert(s)
 
   // A default set of field parsers to deal with trivial cases
   implicit def fieldParserString: FieldParser[String] = fieldParser(identity)
@@ -40,7 +40,7 @@ object Cli {
   // We define implementations for HList forms of KVParser inductively. Here's the zero-case
 
   implicit def hNilParser:KVParser[HNil, HNil, HNil] = new KVParser[HNil, HNil, HNil] {
-    override def parse(kvArgs: Map[String, String], defaults: HNil): Either[ParseErrors, HNil] =
+    override def parse(kvArgs: Map[String, String], defaults: HNil): Either[Problems, HNil] =
       if (kvArgs.nonEmpty)
         // If we have any args left here, they haven't been parsed from earlier fields, so we know that the user has
         // provided an argument that we don't know how to understand. This should be considered an error
@@ -64,10 +64,10 @@ object Cli {
       ): KVParser[FNH :: FNT, VH::VT, DH::DT] = new KVParser[FNH :: FNT, VH ::VT, DH::DT] {
 
     /** Add context to a field parsing error so we know which field was causing the error */
-    private def contextualise(error: ParseError): ParseError =
+    private def contextualise(error: Problem): Problem =
       s"A parse error occurred for field '${fieldNameWitness.value.name}': $error"
 
-    override def parse(kvArgs: Map[String, String], defaults: DH :: DT): Either[ParseErrors, VH :: VT] = {
+    override def parse(kvArgs: Map[String, String], defaults: DH :: DT): Either[Problems, VH :: VT] = {
       // There's probably a clearer way to express this decision tree. I feel like there shouldn't be so many possibilities
       (kvArgs.get(fieldNameWitness.value.name), defaults.head: Option[VH]) match {
         case (Some(stringValue), _) => (fieldParser.fromString(stringValue), tailParser.parse(kvArgs - fieldNameWitness.value.name, defaults.tail)) match {
@@ -93,7 +93,7 @@ object Cli {
 
   /** Trait representing the high-level operations to interacting with the Cli API */
   trait ArgParser[T] {
-    def fromCli(args: Iterable[String]): Either[ParseErrors, T]
+    def fromCli(args: Iterable[String]): Either[Problems, T]
     def usage(): String
   }
 
@@ -116,7 +116,7 @@ object Cli {
    defaults: Default.Aux[CC, D],     // Extracts default values from case class definition
    kvParser: KVParser[K, V, D])      // Our inductively defined KVParser implementation from above
   : ArgParser[CC] = new ArgParser[CC] {
-    override def fromCli(args: Iterable[String]): Either[ParseErrors, CC] = {
+    override def fromCli(args: Iterable[String]): Either[Problems, CC] = {
       kvParser.parse(argsToMap(args), defaults.apply()) map gen.from
     }
 
@@ -127,7 +127,7 @@ object Cli {
 
 
   def transform[T, U](argParser: ArgParser[T], fn: T => U): ArgParser[U] = new ArgParser[U] {
-    override def fromCli(args: Iterable[String]): Either[ParseErrors, U] = argParser.fromCli(args).map(fn)
+    override def fromCli(args: Iterable[String]): Either[Problems, U] = argParser.fromCli(args).map(fn)
     override def usage(): String = argParser.usage()
   }
 
@@ -174,7 +174,7 @@ object Cli {
    *  class family, we can simply define an ArgParser implementation for the case class family, by taking the first
    *  argument to determine a "command" that selects which parser to use */
   implicit def genericSelector[CCF, CP](implicit labelledGeneric: LabelledGeneric.Aux[CCF, CP], cpParser: DiscriminatedParser[CP]): ArgParser[CCF] = new ArgParser[CCF] {
-    override def fromCli(args: Iterable[String]): Either[ParseErrors, CCF] = {
+    override def fromCli(args: Iterable[String]): Either[Problems, CCF] = {
       args.headOption match {
         case Some(command) => cpParser.parser(command) match {
           case Some(parser) => parser.fromCli(args.tail).map(labelledGeneric.from)
@@ -226,6 +226,6 @@ object Cli {
   case class SecondMember(c: Long, d: String) extends Family
 
   def main(args: Array[String]): Unit = {
-    println(Cli.parse[Family](Seq("FirstMember", "--a", "hello", "--b5", "15")))
+    println(Cli.parse[Family](Seq("FirstMember", "--a", "hello", "--b", "15")))
   }
 }

@@ -73,7 +73,29 @@ class CliSpec extends FlatSpec {
     }
     assert(exception.getMessage.contains("age"))
     assert(exception.getMessage.contains("NumberFormatException"))
+  }
 
+
+  case class MyCustomType(firstPart: String, secondPart: String) {
+    override def toString: Problem = firstPart + ":" + secondPart
+  }
+
+  implicit val customTypeParser: FieldParser[MyCustomType] = eitherFieldParser(_.split(":") match {
+    case Array(firstPart, secondPart) => Right(MyCustomType(firstPart, secondPart))
+    case _ => Left("Expected string in the form a:b")
+  })
+
+  case class CommandWithCustomFieldType(name: String, sections: MyCustomType)
+
+  "A case class with a custom field type" should "be parsed by an implicitly-available custom parser" in {
+    assert(Cli.parse[CommandWithCustomFieldType](Seq("--name", "David", "--sections", "aaaa:bbbb")) == CommandWithCustomFieldType("David", MyCustomType("aaaa", "bbbb")))
+  }
+
+  it should "provide a useful error when the custom parser cannot parse the field type" in {
+    val exception = intercept[InvalidOptionsException] {
+      Cli.parse[CommandWithCustomFieldType](Seq("--name", "David", "--sections", "aaaa:bbbb:cccc"))
+    }
+    assert(exception.getMessage.contains("Expected string in the form a:b"))
   }
 
 
