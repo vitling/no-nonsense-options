@@ -11,7 +11,7 @@ import io.github.davw.options.Cli
 
 object MyApp extends App {
   case class Options(inputPath: String, outputPath: String, concurrency: Int = 4)
-  val parsedOptions:Options = Cli.parse[Options](args)
+  val parsedOptions:Options = Cli.parseOrThrow[Options](args)
 }
 
 ```

@@ -1,3 +1,18 @@
+/**
+ * Copyright 2020 David Whiting
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.github.davw.options
 
 import shapeless._
@@ -87,7 +102,7 @@ object Cli {
     /** Append a description for the current field onto the list of descriptions for the tail */
     override def fieldDescription(defaults: DH :: DT): Seq[String] = {
       val defaultString = defaults.head.map(v => s"optional, defaults to $v").getOrElse("required")
-      Seq(s"${fieldNameWitness.value.name} : $defaultString") ++ tailParser.fieldDescription(defaults.tail)
+      Seq(s"${fieldNameToArgName(fieldNameWitness.value.name)} : $defaultString") ++ tailParser.fieldDescription(defaults.tail)
     }
   }
 
@@ -95,6 +110,10 @@ object Cli {
   trait ArgParser[T] {
     def fromCli(args: Iterable[String]): Either[Problems, T]
     def usage(): String
+  }
+
+  object ArgParser {
+    def apply[T : ArgParser]: ArgParser[T] = implicitly[ArgParser[T]]
   }
 
   /**
@@ -201,7 +220,7 @@ object Cli {
     var key: String = null;
     for (arg <- args) {
       if (arg.startsWith("--")) {
-        key = arg.substring(2)
+        key = argNameToFieldName(arg)
       } else {
         if (key == null) {
           throw new InvalidOptionsException(s"Found arg value '$arg', but no corresponding '--' option")
@@ -213,19 +232,42 @@ object Cli {
     map
   }
 
-  def parse[T : ArgParser](args: Iterable[String]): T = implicitly[ArgParser[T]].fromCli(args) match {
-    case Right(v) => v
-    case Left(err) => {
-      println(implicitly[ArgParser[T]].usage())
-      throw new InvalidOptionsException(err.mkString("\n"))
+  private[options] def fieldNameToArgName(fieldName: String): String = {
+    var words = Seq[String]()
+    var partialWord = ""
+    for (char <- fieldName) {
+      if (partialWord.nonEmpty && partialWord.last.isLower && char.isUpper) {
+        words = words :+ partialWord
+        partialWord = ""
+      }
+      partialWord = partialWord + char
     }
+    words = words :+ partialWord
+    "--" + words.map(_.toLowerCase).mkString("-")
   }
 
-  sealed trait Family
-  case class FirstMember(a: String, b: Int) extends Family
-  case class SecondMember(c: Long, d: String) extends Family
+  private[options] def argNameToFieldName(argName: String): String = {
+    val words = argName.stripPrefix("--").split("-")
+    words.head + words.tail.map(_.capitalize).mkString("")
+  }
+
+  def parse[T : ArgParser](args: Iterable[String]): Either[Problems, T] = ArgParser[T].fromCli(args)
+  def usage[T : ArgParser]: String = ArgParser[T].usage();
+
+  def parseOrThrow[T : ArgParser](args: Iterable[String]): T = ArgParser[T].fromCli(args) match {
+    case Right(v) => v
+    case Left(err) =>
+      println(implicitly[ArgParser[T]].usage())
+      throw new InvalidOptionsException(err.mkString("\n"))
+  }
+
+
+  case class Options(inputPath: String, outputPath: String, concurrency: Int = 4)
 
   def main(args: Array[String]): Unit = {
-    println(Cli.parse[Family](Seq("FirstMember", "--a", "hello", "--b", "15")))
+    Cli.parse[Options](args) match {
+      case Right(options) => println(options)
+      case Left(problems) => println(s"Problems occurred parsing args:\n${problems.mkString("\n")}\n"); println("USAGE: \n" + Cli.usage[Options])
+    }
   }
 }
