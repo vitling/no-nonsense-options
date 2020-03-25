@@ -12,13 +12,28 @@ import io.github.davw.options.Cli
 object MyApp extends App {
   case class Options(inputPath: String, outputPath: String, concurrency: Int = 4)
   val parsedOptions:Options = Cli.parseOrThrow[Options](args)
+  println(parsedOptions)
 }
 
 ```
 This will create a command line interface which works like this
 
 ```
-run_my_app --input-path ~/input_data --output-path ~/output_data --concurrency 15
+$ run_my_app --input-path ~/input_data --output-path ~/output_data --concurrency 15
+
+Options(~/input_data,~/output_data,15)
+```
+
+Or if the user has passed invalid or missing options:
+
+```
+$ run_my_app
+
+--input-path : required
+--output-path : required
+--concurrency : optional, defaults to 4
+Exception in thread "main" io.github.davw.options.Cli$InvalidOptionsException: No value for  'inputPath' found in args
+
 ```
 
 ## Motivation
