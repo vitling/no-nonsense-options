@@ -23,11 +23,6 @@
             <version>2.3.3</version>
         </dependency>
         <dependency>
-            <groupId>org.scalactic</groupId>
-            <artifactId>scalactic_${scala.version.major}</artifactId>
-            <version>3.1.1</version>
-        </dependency>
-        <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.version.major}</artifactId>
             <version>3.1.1</version>
@@ -38,26 +33,6 @@
         <sourceDirectory>src/main/scala</sourceDirectory>
         <testSourceDirectory>src/test/scala</testSourceDirectory>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.2</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <executable>java</executable>
-                    <arguments>
-                        <argument>-classpath</argument>
-                        <classpath />
-                        <argument>io.github.davw.options.Main</argument>
-                    </arguments>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
