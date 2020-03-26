@@ -20,6 +20,7 @@ import shapeless.labelled.FieldType
 import shapeless.ops.record.Keys
 
 import scala.util.{Failure, Success, Try}
+
 object Cli {
 
   type Problem = String
@@ -258,15 +259,5 @@ object Cli {
     case Left(err) =>
       println(implicitly[ArgParser[T]].usage())
       throw new InvalidOptionsException(err.mkString("\n"))
-  }
-
-
-  case class Options(inputPath: String, outputPath: String, concurrency: Int = 4)
-
-  def main(args: Array[String]): Unit = {
-    Cli.parse[Options](args) match {
-      case Right(options) => println(options)
-      case Left(problems) => println(s"Problems occurred parsing args:\n${problems.mkString("\n")}\n"); println("USAGE: \n" + Cli.usage[Options])
-    }
   }
 }
