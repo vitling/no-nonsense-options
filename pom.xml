@@ -21,11 +21,31 @@ limitations under the License.
     <groupId>io.github.davw</groupId>
     <artifactId>no-nonsense-options</artifactId>
     <name>no-nonsense-options</name>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <scala.version>2.13.1</scala.version>
         <scala.version.major>2.13</scala.version.major>
     </properties>
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <name>David Whiting</name>
+            <email>davidwhiting@gmail.com</email>
+            <organization>DavW</organization>
+            <organizationUrl>http://github.com/DavW</organizationUrl>
+        </developer>
+    </developers>
+    <scm>
+        <connection>scm:git:git://github.com/DavW/no-nonsense-options.git</connection>
+        <developerConnection>scm:git:ssh://github.com:DavW/no-nonsense-options.git</developerConnection>
+        <url>http://github.com/DavW/no-nonsense-options/tree/master</url>
+    </scm>
     <dependencies>
         <dependency>
             <groupId>org.scala-lang</groupId>
@@ -46,12 +66,12 @@ limitations under the License.
     </dependencies>
     <distributionManagement>
         <repository>
-            <id>sonatype-release</id>
+            <id>sonatype-nexus-staging</id>
             <name>Sonatype OSS Release</name>
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
         </repository>
         <snapshotRepository>
-            <id>sonatype-snapshot</id>
+            <id>sonatype-nexus-snapshot</id>
             <name>Sonatype OSS Snapshots</name>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
@@ -103,6 +123,20 @@ limitations under the License.
                         <id>test</id>
                         <goals>
                             <goal>test</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.5</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
                         </goals>
                     </execution>
                 </executions>
