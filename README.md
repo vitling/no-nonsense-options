@@ -6,6 +6,14 @@ automatically derive predictable and useful command line interfaces for programs
 
 ## At a glance
 
+```xml
+<dependency>
+   <groupId>org.scalatest</groupId>
+   <artifactId>scalatest_${scala.version.major}</artifactId>
+   <version>0.1.0</version>
+</dependency>
+```
+
 ```scala
 
 import io.github.davw.options.Cli
