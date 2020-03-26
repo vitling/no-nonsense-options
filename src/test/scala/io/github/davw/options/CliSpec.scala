@@ -96,7 +96,7 @@ class CliSpec extends FlatSpec {
     override def toString: Problem = firstPart + ":" + secondPart
   }
 
-  implicit val customTypeParser: FieldParser[MyCustomType] = eitherFieldParser(_.split(":") match {
+  implicit val customTypeParser: FieldParser[MyCustomType] = FieldParser.either(_.split(":") match {
     case Array(firstPart, secondPart) => Right(MyCustomType(firstPart, secondPart))
     case _ => Left("Expected string in the form a:b")
   })
