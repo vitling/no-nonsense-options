@@ -1,4 +1,5 @@
 # no-nonsense-options
+![Maven Scala build](https://github.com/davw/no-nonsense-options/workflows/Maven%20Scala%20build/badge.svg)
 
 no-nonsense-options is an Scala command-line options parser which uses [Shapeless](https://github.com/milessabin/shapeless) to
 automatically derive predictable and useful command line interfaces for programs based on the data they need to run.
