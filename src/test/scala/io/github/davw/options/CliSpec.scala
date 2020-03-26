@@ -93,12 +93,12 @@ class CliSpec extends FlatSpec {
 
 
   case class MyCustomType(firstPart: String, secondPart: String) {
-    override def toString: Problem = firstPart + ":" + secondPart
+    override def toString: String = firstPart + ":" + secondPart
   }
 
   implicit val customTypeParser: FieldParser[MyCustomType] = FieldParser.either(_.split(":") match {
     case Array(firstPart, secondPart) => Right(MyCustomType(firstPart, secondPart))
-    case _ => Left("Expected string in the form a:b")
+    case _ => Left(ParseError("Expected string in the form a:b"))
   })
 
   case class CommandWithCustomFieldType(name: String, sections: MyCustomType)
@@ -125,6 +125,12 @@ class CliSpec extends FlatSpec {
     assert(usage contains "--output-file-pattern")
   }
 
+  import UsefulFieldParsers.fieldParserOption
 
+  case class CommandWithOptionValues(name: String, greeting: Option[String] = None)
 
+  "A command with values of type Option[T]" should "parse with or without the option being passed" in {
+    assert(Cli.parseOrThrow[CommandWithOptionValues](Seq("--name", "David")) == CommandWithOptionValues("David", None))
+    assert(Cli.parseOrThrow[CommandWithOptionValues](Seq("--name", "David", "--greeting", "Hi there!")) == CommandWithOptionValues("David", Some("Hi there!")))
+  }
 }
