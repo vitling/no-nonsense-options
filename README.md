@@ -36,6 +36,14 @@ Exception in thread "main" io.github.davw.options.Cli$InvalidOptionsException: N
 
 ```
 
+If you have a field which is of a non-trivial type, it is easy to provide a parse method
+
+```scala
+import io.github.davw.options.Cli.FieldParser
+import java.io.File
+implicit def dateFieldParser: FieldParser[File] = FieldParser(new File(_))
+```
+
 ## Motivation
 
 Most option parsing libraries and systems start from specifying the interface and then mapping that into data types that

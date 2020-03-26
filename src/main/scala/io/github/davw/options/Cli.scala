@@ -38,19 +38,22 @@ object Cli {
     def fromString(s: String): Either[Problem, T]
   }
 
-  /** Create a FieldParser from a function that might throw an exception, catching it and transforming it to a Left(ParseError) */
-  def fieldParser[T](possiblyThrowsException: String => T): FieldParser[T] = s => Try(possiblyThrowsException(s)) match {
-    case Success(v) => Right(v)
-    case Failure(f) => Left(f.toString)
+  object FieldParser {
+
+    /** Create a FieldParser from a function that might throw an exception, catching it and transforming it to a Left(ParseError) */
+    def apply[T](possiblyThrowsException: String => T): FieldParser[T] = s => Try(possiblyThrowsException(s)) match {
+      case Success(v) => Right(v)
+      case Failure(f) => Left(f.toString)
+    }
+
+    /** Create a FieldParser from a function that follows the Haskell-style Either error pattern */
+    def either[T](convert: String => Either[Problem, T]): FieldParser[T] = s => convert(s)
   }
 
-  /** Create a FieldParser from a function that follows the Haskell-style Either error pattern */
-  def eitherFieldParser[T](convert: String => Either[Problem, T]): FieldParser[T] = s => convert(s)
-
   // A default set of field parsers to deal with trivial cases
-  implicit def fieldParserString: FieldParser[String] = fieldParser(identity)
-  implicit def fieldParserInt: FieldParser[Int] = fieldParser(_.toInt)
-  implicit def fieldParserLong: FieldParser[Long] = fieldParser(_.toLong)
+  implicit def fieldParserString: FieldParser[String] = FieldParser(identity)
+  implicit def fieldParserInt: FieldParser[Int] = FieldParser(_.toInt)
+  implicit def fieldParserLong: FieldParser[Long] = FieldParser(_.toLong)
 
   // We define implementations for HList forms of KVParser inductively. Here's the zero-case
 
@@ -83,15 +86,16 @@ object Cli {
       s"A parse error occurred for field '${fieldNameWitness.value.name}': $error"
 
     override def parse(kvArgs: Map[String, String], defaults: DH :: DT): Either[Problems, VH :: VT] = {
+      val argName = fieldNameToArgName(fieldNameWitness.value.name)
       // There's probably a clearer way to express this decision tree. I feel like there shouldn't be so many possibilities
-      (kvArgs.get(fieldNameWitness.value.name), defaults.head: Option[VH]) match {
-        case (Some(stringValue), _) => (fieldParser.fromString(stringValue), tailParser.parse(kvArgs - fieldNameWitness.value.name, defaults.tail)) match {
+      (kvArgs.get(argName), defaults.head: Option[VH]) match {
+        case (Some(stringValue), _) => (fieldParser.fromString(stringValue), tailParser.parse(kvArgs - argName, defaults.tail)) match {
           case (Right(head), Right(tail)) => Right(head :: tail)
           case (Right(_), Left(tailError)) => Left(tailError)
           case (Left(error), Left(tailError)) => Left(Seq(contextualise(error)) ++ tailError)
           case (Left(error), Right(_)) => Left(Seq(contextualise(error)))
         }
-        case (_, Some(defaultValue)) => tailParser.parse(kvArgs - fieldNameWitness.value.name, defaults.tail) match {
+        case (_, Some(defaultValue)) => tailParser.parse(kvArgs - argName, defaults.tail) match {
           case Right(success) => Right(defaultValue :: success)
           case Left(errors) => Left(errors)
         }
@@ -220,7 +224,7 @@ object Cli {
     var key: String = null;
     for (arg <- args) {
       if (arg.startsWith("--")) {
-        key = argNameToFieldName(arg)
+        key = arg
       } else {
         if (key == null) {
           throw new InvalidOptionsException(s"Found arg value '$arg', but no corresponding '--' option")
@@ -244,11 +248,6 @@ object Cli {
     }
     words = words :+ partialWord
     "--" + words.map(_.toLowerCase).mkString("-")
-  }
-
-  private[options] def argNameToFieldName(argName: String): String = {
-    val words = argName.stripPrefix("--").split("-")
-    words.head + words.tail.map(_.capitalize).mkString("")
   }
 
   def parse[T : ArgParser](args: Iterable[String]): Either[Problems, T] = ArgParser[T].fromCli(args)
