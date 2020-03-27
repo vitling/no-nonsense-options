@@ -15,7 +15,6 @@
  */
 package io.github.davw.options
 
-import io.github.davw.options.Cli.InvalidOptionsException
 import shapeless.labelled.FieldType
 import shapeless.{:+:, CNil, Coproduct, Default, Generic, HList, Inl, Inr, LabelledGeneric, Witness, labelled}
 import shapeless.ops.record.Keys
@@ -52,7 +51,9 @@ trait DervivedArgParsers {
    kvParser: KVParser[K, V, D])      // Our inductively defined KVParser implementation from above
   : ArgParser[CC] = new ArgParser[CC] {
     override def fromCli(args: Iterable[String]): Either[Seq[ParseError], CC] = {
-      kvParser.parse(argsToMap(args), defaults.apply()) map gen.from
+      argsToMap(args).left.map(Seq(_)).flatMap(argMap => {
+        kvParser.parse(argMap, defaults.apply()).map(gen.from)
+      })
     }
 
     override def usage(): String = {
@@ -128,7 +129,7 @@ trait DervivedArgParsers {
    *  eg. Map("input" -> "this", "output" -> "that")
    *  TODO: This is probably not as safe as it could be
    *  */
-  private def argsToMap(args: Iterable[String]): Map[String, String] = {
+  private def argsToMap(args: Iterable[String]): Either[ParseError, Map[String, String]] = {
     var map: Map[String, String] = Map()
     var key: String = null;
     for (arg <- args) {
@@ -136,12 +137,12 @@ trait DervivedArgParsers {
         key = arg
       } else {
         if (key == null) {
-          throw new InvalidOptionsException(s"Found arg value '$arg', but no corresponding '--' option")
+          return Left(ParseError(s"Found arg value '$arg', but no corresponding '--' option"))
         }
         map = map + (key -> arg)
         key = null
       }
     }
-    map
+    Right(map)
   }
 }
