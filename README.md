@@ -57,14 +57,14 @@ Built for Scala 2.13. Cross-builds are not set up yet (PRs welcome for templatin
 <dependency>
    <groupId>io.github.davw</groupId>
    <artifactId>no-nonsense-options</artifactId>
-   <version>0.1.1</version>
+   <version>0.1.2</version>
 </dependency>
 ```
 
 #### sbt
 *(note the single `%`, this is not cross-built)*
 ```scala
-"io.github.davw" % "no-nonsense-options" % "0.1.1"
+"io.github.davw" % "no-nonsense-options" % "0.1.2"
 ```
 
 ## API
