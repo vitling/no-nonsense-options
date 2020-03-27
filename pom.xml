@@ -22,6 +22,8 @@ limitations under the License.
     <artifactId>no-nonsense-options</artifactId>
     <name>no-nonsense-options</name>
     <version>0.1.1-SNAPSHOT</version>
+    <url>https://github.com/DavW/no-nonsense-options</url>
+    <description>Scala command line option parser using interfaces derived from destination types</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <scala.version>2.13.1</scala.version>
@@ -86,11 +88,19 @@ limitations under the License.
                 <version>4.3.1</version>
                 <executions>
                     <execution>
+                        <id>compile</id>
                         <goals>
                             <goal>compile</goal>
                             <goal>testCompile</goal>
                         </goals>
                         <phase>compile</phase>
+                    </execution>
+                    <execution>
+                        <id>docs</id>
+                        <goals>
+                            <goal>doc-jar</goal>
+                        </goals>
+                        <phase>package</phase>
                     </execution>
                 </executions>
                 <configuration>
@@ -141,6 +151,21 @@ limitations under the License.
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 </project>

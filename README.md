@@ -21,9 +21,9 @@ object MyApp extends App {
 This will create a command line interface which works like this
 
 ```
-$ run_my_app --input-path ~/input_data --output-path ~/output_data --concurrency 15
+$ run_my_app --input-path /blah/input_data --output-path /blah/output_data --concurrency 15
 
-Options(~/input_data,~/output_data,15)
+Options(/blah/input_data,/blah/output_data,15)
 ```
 
 Or if the user has passed invalid or missing options:
@@ -44,6 +44,9 @@ Most option parsing libraries and systems start from specifying the interface an
 can be used by the program. In observing many examples of the usage of this I saw a lot of redundancy and boilerplate
 which requires no knowledge of the internal workings to produce. This can lead to errors in the mapping code, and
 more moving parts to change if the CLI needs to be modified.
+
+By inverting the problem, we encode all the conventions that people would naturally follow anyway in code, and the
+list of possible options need only be specified once.
 
 ## Using in your project
 
