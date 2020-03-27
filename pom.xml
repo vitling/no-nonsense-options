@@ -21,7 +21,7 @@ limitations under the License.
     <groupId>io.github.davw</groupId>
     <artifactId>no-nonsense-options</artifactId>
     <name>no-nonsense-options</name>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.1</version>
     <url>https://github.com/DavW/no-nonsense-options</url>
     <description>Scala command line option parser using interfaces derived from destination types</description>
     <properties>
