@@ -61,8 +61,7 @@ trait DervivedArgParsers {
     }
   }
 
-
-  def transform[T, U](argParser: ArgParser[T], fn: T => U): ArgParser[U] = new ArgParser[U] {
+  private def transform[T, U](argParser: ArgParser[T], fn: T => U): ArgParser[U] = new ArgParser[U] {
     override def fromCli(args: Iterable[String]): Either[Seq[ParseError], U] = argParser.fromCli(args).map(fn)
     override def usage(): String = argParser.usage()
   }
@@ -126,23 +125,16 @@ trait DervivedArgParsers {
 
   /** Conversion of a string of args,
    *  eg. "--input this --output that" to a key-value map,
-   *  eg. Map("input" -> "this", "output" -> "that")
-   *  TODO: This is probably not as safe as it could be
-   *  */
+   *  eg. Map("--input" -> "this", "--output" -> "that")
+   *  TODO is the excessively "functional" implementation obfuscating?
+   */
   private def argsToMap(args: Iterable[String]): Either[ParseError, Map[String, String]] = {
-    var map: Map[String, String] = Map()
-    var key: String = null;
-    for (arg <- args) {
-      if (arg.startsWith("--")) {
-        key = arg
-      } else {
-        if (key == null) {
-          return Left(ParseError(s"Found arg value '$arg', but no corresponding '--' option"))
-        }
-        map = map + (key -> arg)
-        key = null
-      }
-    }
-    Right(map)
+    case class State(map: Map[String, String] = Map(), key: Option[String] = None)
+    args.foldLeft[Either[ParseError, State]](Right(State()))({
+      case (Right(State(map, _)), arg) if arg.startsWith("--") => Right(State(map, Some(arg)))
+      case (Right(State(map, Some(key))), arg) => Right(State(map + (key -> arg), None))
+      case (Right(State(_, None)), arg) => Left(ParseError(s"Found arg value '$arg', but no corresponding '--' option"))
+      case (failure, _) => failure
+    }).map(_.map)
   }
 }
