@@ -22,7 +22,7 @@ object Cli extends DerivedKVParsers with DervivedArgParsers with SimpleFieldPars
   class InvalidOptionsException(str: String) extends IllegalArgumentException(str)
 
   def parse[T : ArgParser](args: Iterable[String]): Either[Seq[ParseError], T] = ArgParser[T].fromCli(args)
-  def usage[T : ArgParser]: String = ArgParser[T].usage();
+  def usage[T : ArgParser]: String = ArgParser[T].usage()
 
   def parseOrThrow[T : ArgParser](args: Iterable[String]): T = ArgParser[T].fromCli(args) match {
     case Right(v) => v

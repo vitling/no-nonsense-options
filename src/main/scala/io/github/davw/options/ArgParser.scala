@@ -1,3 +1,18 @@
+/**
+ * Copyright 2020 David Whiting
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.github.davw.options
 
 import io.github.davw.options.Cli.InvalidOptionsException
@@ -5,7 +20,7 @@ import shapeless.labelled.FieldType
 import shapeless.{:+:, CNil, Coproduct, Default, Generic, HList, Inl, Inr, LabelledGeneric, Witness, labelled}
 import shapeless.ops.record.Keys
 
-/** Trait representing the high-level operations to interacting with the Cli API */
+/** Typeclass representing how a value of type T can be parsed from an sequence of command line arguments */
 trait ArgParser[T] {
   def fromCli(args: Iterable[String]): Either[Seq[ParseError], T]
   def usage(): String
