@@ -16,6 +16,8 @@
 
 package io.github.davw.options
 
+import io.github.davw.options
+import jdk.jfr.Description
 import org.scalatest._
 
 class CliSpec extends FlatSpec {
@@ -132,5 +134,14 @@ class CliSpec extends FlatSpec {
   "A command with values of type Option[T]" should "parse with or without the option being passed" in {
     assert(Cli.parseOrThrow[CommandWithOptionValues](Seq("--name", "David")) == CommandWithOptionValues("David", None))
     assert(Cli.parseOrThrow[CommandWithOptionValues](Seq("--name", "David", "--greeting", "Hi there!")) == CommandWithOptionValues("David", Some("Hi there!")))
+  }
+
+  case class DescribedOptions(@options.Hint("xyzzy") input: String, @options.Hint("abcde") output: String)
+
+  "A case class with descriptive text annotated in the options" should "include the description in the usage text" in {
+    val usage = Cli.usage[DescribedOptions]
+    println(usage)
+    assert(usage contains "xyzzy")
+    assert(usage contains "abcde")
   }
 }
