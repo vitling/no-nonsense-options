@@ -16,7 +16,7 @@
 package io.github.davw.options
 
 import shapeless.labelled.FieldType
-import shapeless.{:+:, CNil, Coproduct, Default, Generic, HList, Inl, Inr, LabelledGeneric, Witness, labelled}
+import shapeless.{:+:, Annotations, CNil, Coproduct, Default, Generic, HList, Inl, Inr, LabelledGeneric, Witness, labelled}
 import shapeless.ops.record.Keys
 
 /** Typeclass representing how a value of type T can be parsed from an sequence of command line arguments */
@@ -42,13 +42,16 @@ trait DervivedArgParsers {
     R <: HList, // Record-typed translation of case-class type
     K <: HList, // Simple HList of field name symbols
     V <: HList, // Simple HList type for field values
-    D <: HList] // Simple HList of default values provided in case class definition
+    D <: HList, // Simple HList of default values provided in case class definition
+    H <: HList]
   (implicit
    lGen: LabelledGeneric.Aux[CC, R], // Used only to extract field name key type
-   gen: Generic.Aux[CC, V],          // Conversion from finished V record to case class
-   keys: Keys.Aux[R, K],             // Used in conjunction with lGen to extract field name key type
-   defaults: Default.Aux[CC, D],     // Extracts default values from case class definition
-   kvParser: KVParser[K, V, D])      // Our inductively defined KVParser implementation from above
+   gen: Generic.Aux[CC, V], // Conversion from finished V record to case class
+   keys: Keys.Aux[R, K], // Used in conjunction with lGen to extract field name key type
+   defaults: Default.Aux[CC, D], // Extracts default values from case class definition
+   hints: Annotations.Aux[Hint, CC, H], // Annotations containing usage hints
+   kvParser: KVParser[K, V, D, H] // Our inductively defined KVParser implementation from above
+   )
   : ArgParser[CC] = new ArgParser[CC] {
     override def fromCli(args: Iterable[String]): Either[Seq[ParseError], CC] = {
       argsToMap(args).left.map(Seq(_)).flatMap(argMap => {
@@ -57,7 +60,7 @@ trait DervivedArgParsers {
     }
 
     override def usage(): String = {
-      kvParser.fieldDescription(defaults.apply()).mkString("\n")
+      kvParser.fieldDescription(defaults.apply(), hints.apply()).mkString("\n")
     }
   }
 

@@ -19,16 +19,16 @@ import shapeless.{::, HList, HNil, Witness}
 
 /** Represents how a type OutputType with the given FieldNames can be parsed from a String->String K-V map and
  *  a set of default values */
-trait KVParser[FieldNames, OutputType, DefaultValues] {
+trait KVParser[FieldNames, OutputType, DefaultValues, Hints] {
   def parse(kvArgs: Map[String, String], defaults: DefaultValues): Either[Seq[ParseError], OutputType]
 
   /** A description of each of the fields in the OutputType. This is used to produce the "usage" string */
-  def fieldDescription(defaults: DefaultValues): Seq[String]
+  def fieldDescription(defaults: DefaultValues, hints: Hints): Seq[String]
 }
 
 trait DerivedKVParsers {
   // We define implementations for HList forms of KVParser inductively. Here's the zero-case
-  implicit def hNilParser:KVParser[HNil, HNil, HNil] = new KVParser[HNil, HNil, HNil] {
+  implicit def hNilParser:KVParser[HNil, HNil, HNil, HNil] = new KVParser[HNil, HNil, HNil, HNil] {
     override def parse(kvArgs: Map[String, String], defaults: HNil): Either[Seq[ParseError], HNil] =
       if (kvArgs.nonEmpty)
       // If we have any args left here, they haven't been parsed from earlier fields, so we know that the user has
@@ -37,7 +37,7 @@ trait DerivedKVParsers {
       else
       Right(HNil)
     // No argument usage information for the empty list
-    override def fieldDescription(defaults: HNil): Seq[String] = Nil
+    override def fieldDescription(defaults: HNil, hints: HNil): Seq[String] = Nil
   }
 
   implicit def hConsParser[
@@ -46,11 +46,14 @@ trait DerivedKVParsers {
     VH,                // The current value type
     VT <: HList,       // The value type of the remaining list
     DH <: Option[VH],  // The default value for the current field. It is provably of either Some[VH] or None
-    DT <: HList](implicit
-                 fieldParser: FieldParser[VH],      // string parser for the current field
-                 tailParser: KVParser[FNT, VT, DT], // link to the previous induction step
-                 fieldNameWitness: Witness.Aux[FNH] // to extract field name value
-                ): KVParser[FNH :: FNT, VH::VT, DH::DT] = new KVParser[FNH :: FNT, VH ::VT, DH::DT] {
+    DT <: HList,
+    HH <: Option[Hint],
+    HT <: HList
+  ](implicit
+    fieldParser: FieldParser[VH], // string parser for the current field
+    tailParser: KVParser[FNT, VT, DT, HT], // link to the previous induction step
+    fieldNameWitness: Witness.Aux[FNH] // to extract field name value
+   ): KVParser[FNH :: FNT, VH::VT, DH::DT, HH::HT] = new KVParser[FNH :: FNT, VH ::VT, DH::DT, HH::HT] {
 
     /** Add context to a field parsing error so we know which field was causing the error */
     private def contextualise(error: ParseError): ParseError =
@@ -75,9 +78,10 @@ trait DerivedKVParsers {
     }
 
     /** Append a description for the current field onto the list of descriptions for the tail */
-    override def fieldDescription(defaults: DH :: DT): Seq[String] = {
+    override def fieldDescription(defaults: DH :: DT, hints: HH :: HT): Seq[String] = {
       val defaultString = defaults.head.map(v => s"optional, defaults to $v").getOrElse("required")
-      Seq(s"${fieldNameToArgName(fieldNameWitness.value.name)} : $defaultString") ++ tailParser.fieldDescription(defaults.tail)
+      val descriptionString = hints.head.map(" - " + _.text).getOrElse("")
+      Seq(s"${fieldNameToArgName(fieldNameWitness.value.name)} : $defaultString $descriptionString") ++ tailParser.fieldDescription(defaults.tail, hints.tail)
     }
   }
 
