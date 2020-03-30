@@ -136,7 +136,7 @@ class CliSpec extends FlatSpec {
     assert(Cli.parseOrThrow[CommandWithOptionValues](Seq("--name", "David", "--greeting", "Hi there!")) == CommandWithOptionValues("David", Some("Hi there!")))
   }
 
-  case class DescribedOptions(@options.Hint("xyzzy") input: String, @options.Hint("abcde") output: String)
+  case class DescribedOptions(@Hint("xyzzy") input: String, @Hint("abcde") output: String)
 
   "A case class with descriptive text annotated in the options" should "include the description in the usage text" in {
     val usage = Cli.usage[DescribedOptions]

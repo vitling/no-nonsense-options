@@ -43,14 +43,15 @@ trait DervivedArgParsers {
     K <: HList, // Simple HList of field name symbols
     V <: HList, // Simple HList type for field values
     D <: HList, // Simple HList of default values provided in case class definition
-    Desc <: HList]
+    H <: HList]
   (implicit
    lGen: LabelledGeneric.Aux[CC, R], // Used only to extract field name key type
-   gen: Generic.Aux[CC, V],          // Conversion from finished V record to case class
-   keys: Keys.Aux[R, K],             // Used in conjunction with lGen to extract field name key type
-   defaults: Default.Aux[CC, D],     // Extracts default values from case class definition
-   kvParser: KVParser[K, V, D, Desc],      // Our inductively defined KVParser implementation from above
-   hints: Annotations.Aux[Hint, CC, Desc])
+   gen: Generic.Aux[CC, V], // Conversion from finished V record to case class
+   keys: Keys.Aux[R, K], // Used in conjunction with lGen to extract field name key type
+   defaults: Default.Aux[CC, D], // Extracts default values from case class definition
+   hints: Annotations.Aux[Hint, CC, H], // Annotations containing usage hints
+   kvParser: KVParser[K, V, D, H] // Our inductively defined KVParser implementation from above
+   )
   : ArgParser[CC] = new ArgParser[CC] {
     override def fromCli(args: Iterable[String]): Either[Seq[ParseError], CC] = {
       argsToMap(args).left.map(Seq(_)).flatMap(argMap => {
