@@ -104,6 +104,9 @@ object ExampleCli {
 Default values in your case class work in the way you'd expect. They are not required to be specified, but if they do
 they will override the value specified as the default.
 
+### Descriptive hints for usage text (0.2.0+)
+If you need extra help text for an option to go in its usage text, just annotate that field with `@Hint("helpful text")`
+
 ### Multiple "commands" via sealed case class families
 
 Primitive support is provided for parsing into range of different top-level options via representing those options as a
