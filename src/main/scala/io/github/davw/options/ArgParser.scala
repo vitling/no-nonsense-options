@@ -100,13 +100,16 @@ trait DervivedArgParsers {
    tail: DiscriminatedParser[CR])        // If it's not a match, we defer to the Coproduct tail
   : DiscriminatedParser[FieldType[KL, VL] :+: CR] = new DiscriminatedParser[FieldType[KL, VL] :+: CR] {
     override def parser(command: String): Option[ArgParser[FieldType[KL, VL] :+: CR]] = {
-      if (command == keyWitness.value.name)
+      if (commandNameMatches(command, keyWitness.value.name))
         Some(transform(argParser, (x: VL) => Inl[FieldType[KL, VL], CR](field[KL](x))))
       else
         tail.parser(command).map(parser => transform(parser, (x: CR) => Inr[FieldType[KL, VL], CR](x)))
     }
     override def options: Seq[String] = Seq(keyWitness.value.name) ++ tail.options
   }
+
+  def commandNameMatches(commandName: String, className: String): Boolean =
+    commandName.toLowerCase.replaceAll("[^A-Za-z0-9]", "") == className.toLowerCase.replaceAll("[^A-Za-z0-9]", "")
 
   /** Using the DiscriminatedParser implementation that can be derived from the isomorphic Coproduct to a sealed case
    *  class family, we can simply define an ArgParser implementation for the case class family, by taking the first
