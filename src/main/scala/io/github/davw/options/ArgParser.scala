@@ -43,7 +43,7 @@ trait DervivedArgParsers {
     K <: HList, // Simple HList of field name symbols
     V <: HList, // Simple HList type for field values
     D <: HList, // Simple HList of default values provided in case class definition
-    H <: HList]
+    H <: HList] // Simple HList of "Hint" annotations for the case class. Each element <: Option[Hint]
   (implicit
    lGen: LabelledGeneric.Aux[CC, R], // Used only to extract field name key type
    gen: Generic.Aux[CC, V], // Conversion from finished V record to case class

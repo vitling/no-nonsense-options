@@ -42,13 +42,13 @@ trait DerivedKVParsers {
 
   implicit def hConsParser[
     FNH <: Symbol,     // The current field name
-    FNT <: HList,      // The remaining field names
+    FNT <: HList,      // Tail of the field name list
     VH,                // The current value type
-    VT <: HList,       // The value type of the remaining list
+    VT <: HList,       // Tail of the value type list
     DH <: Option[VH],  // The default value for the current field. It is provably of either Some[VH] or None
-    DT <: HList,
-    HH <: Option[Hint],
-    HT <: HList
+    DT <: HList,       // Tail of the default values list
+    HH <: Option[Hint],// Hint annotation for the current field, if present
+    HT <: HList        // Tail of the hint list
   ](implicit
     fieldParser: FieldParser[VH], // string parser for the current field
     tailParser: KVParser[FNT, VT, DT, HT], // link to the previous induction step
