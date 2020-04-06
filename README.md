@@ -113,14 +113,18 @@ Primitive support is provided for parsing into range of different top-level opti
 sealed case-class family
 ```scala
 sealed trait Command
-case class First(param: Long) extends Command
-case class Second(somePath: String) extends Command
+case class FirstThing(param: Long) extends Command
+case class SecondThing(somePath: String) extends Command
 ```
 `Cli.parse[Command]` will accept arguments of either form, with the case class name as the first arg
 ```
-$ run_my_app First --param 19482
-$ run_my_app Second --some-path /path/to/a/thing
+$ run_my_app first_thing --param 19482
+$ run_my_app second_thing --some-path /path/to/a/thing
 ```
+
+The matching is loose enough to understand `FirstThing` as `first_thing` or `first-thing` or `firsthing` or `FIRSTTHING`
+(case insensitive on alphanumeric reduction)
+
 If you add something like a `run()` method to the `Command` trait, you can execute it directly on the returned `Command`
 object, or else you can pattern-match against the result.
 

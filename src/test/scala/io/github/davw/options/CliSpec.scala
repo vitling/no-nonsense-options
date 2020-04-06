@@ -71,6 +71,11 @@ class CliSpec extends FlatSpec {
     assert(Cli.parseOrThrow[Commands](Seq("CommandTwo", "--input", "my_input", "--throughput", "my_throughput")) == CommandTwo("my_input", "my_throughput"))
   }
 
+  it should "be parsed with loosely-matching first arguments in common forms" in {
+    assert(Cli.parseOrThrow[Commands](Seq("command_one", "--input", "my_input", "--output", "my_output", "--mode", "mode_one")) == CommandOne("my_input", "my_output", "mode_one"))
+    assert(Cli.parseOrThrow[Commands](Seq("COMMANDTWO", "--input", "my_input", "--throughput", "my_throughput")) == CommandTwo("my_input", "my_throughput"))
+  }
+
   case class CommandWithDefaults(input: String, output: String = "/dev/null")
 
   "A case class with a default value" should "be parsed with or without the argument with a default value being passed" in {
